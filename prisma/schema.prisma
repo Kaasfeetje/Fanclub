@@ -66,3 +66,42 @@ model VerificationToken {
 
     @@unique([identifier, token])
 }
+
+model Fixture{
+    id          String @id @default(cuid())
+    home        Club @relation(name:"home",fields:[homeId],references:[id])
+    homeId      String
+    away        Club @relation(name:"away",fields:[awayId],references:[id])
+    awayId      String
+    date        DateTime
+    competition Competition @relation(fields:[competitionId],references:[id])
+    competitionId String
+    score       String? //score model
+}
+
+model Club{
+    id String @id @default(cuid())
+    name String @unique
+    logo String?
+    stadium String? //Stadium model
+    website String?
+    socials String? //Socials model
+    squad String? //Squad model
+
+    homeFixtures Fixture[] @relation(name:"home")
+    awayFixtures Fixture[] @relation(name:"away")
+
+    competitions Competition[]
+}
+
+model Competition{
+    id String @id @default(cuid())
+    name String
+    logo String?
+    country String //Country model
+    year Int //probably
+
+    clubs Club[]
+    fixtures Fixture[]
+}
+
