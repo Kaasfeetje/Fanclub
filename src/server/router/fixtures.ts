@@ -6,7 +6,9 @@ export const fixtureRouter = createRouter().query("getAll", {
             include: {
                 home: true,
                 away: true,
+                score: true,
             },
         });
     },
 });
+

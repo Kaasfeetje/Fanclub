@@ -18,6 +18,9 @@ const Home: NextPage = () => {
     const seedAllMutation = trpc.useMutation(["seeder.all"]);
     const seedClubsMutation = trpc.useMutation(["seeder.clubs"]);
     const seedDeleteAllMutation = trpc.useMutation(["seeder.deleteAll"]);
+    const seedScrapePremierLeagueMutation = trpc.useMutation([
+        "seeder.scrapePremierLeague",
+    ]);
 
     const filteredFixtures = useMemo(() => {
         if (!dataFixtures) {
@@ -30,6 +33,7 @@ const Home: NextPage = () => {
                 new RegExp(search, "i").test(fixture.away.name)
         );
     }, [dataFixtures, search]);
+    console.log(filteredFixtures);
 
     if (isLoading || isLoadingFixtures) {
         return <div>Loading...</div>;
@@ -68,10 +72,19 @@ const Home: NextPage = () => {
                 >
                     Empty Database
                 </button>
+                <button
+                    className="block"
+                    onClick={() => seedScrapePremierLeagueMutation.mutate()}
+                >
+                    Scrape Premier League
+                </button>
             </div>
             <ul>
                 {data?.map((club) => (
-                    <li key={club.id}>{club.name}</li>
+                    <li key={club.id}>
+                        {club.name}{" "}
+                        <span className="font-bold">{club.abbr}</span>
+                    </li>
                 ))}
             </ul>
             <input
@@ -102,6 +115,11 @@ const Home: NextPage = () => {
                         >
                             {fixture.away.name}
                         </span>
+                        {fixture.score && (
+                            <div>
+                                {fixture.score.home}:{fixture.score.away}
+                            </div>
+                        )}
                     </li>
                 ))}
             </ul>

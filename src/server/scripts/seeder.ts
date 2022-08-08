@@ -1,10 +1,10 @@
 import { Club, PrismaClient } from "@prisma/client";
 import fs from "fs";
+import { number } from "zod";
 import plFixtures from "../data/pl-fixtures.json";
 
 const createPremierLeague = async (prisma: PrismaClient) => {
     const clubs = await addPlClubs(prisma);
-    console.log("AAA");
     const competition = await prisma.competition.create({
         data: {
             country: "England",
@@ -13,46 +13,46 @@ const createPremierLeague = async (prisma: PrismaClient) => {
             year: 2022,
         },
     });
-    console.log("BBB");
-    const plFixtures = await addPlFixtures(prisma, clubs, competition.id);
-    console.log("CCC");
+    await addPlFixtures(prisma, clubs, competition.id);
 };
 
-const addPlClubs = async (prisma: PrismaClient) => {
-    const plClubs = [
-        "Arsenal",
-        "Aston Villa",
-        "Bournemouth",
-        "Brentford",
-        "Brighton & Hove Albion",
-        "Chelsea",
-        "Crystal Palace",
-        "Everton",
-        "Fulham",
-        "Leeds United",
-        "Leicester City",
-        "Liverpool",
-        "Manchester City",
-        "Manchester United",
-        "Newcastle United",
-        "Nottingham Forest",
-        "Southampton",
-        "Tottenham Hotspur",
-        "West Ham United",
-        "Wolverhampton Wanderers",
-    ];
+export const plClubs = [
+    { name: "Arsenal", abbr: "ARS" },
+    { name: "Aston Villa", abbr: "AVL" },
+    { name: "Bournemouth", abbr: "BOU" },
+    { name: "Brentford", abbr: "BRE" },
+    { name: "Brighton & Hove Albion", abbr: "BHA" },
+    { name: "Chelsea", abbr: "CHE" },
+    { name: "Crystal Palace", abbr: "CRY" },
+    { name: "Everton", abbr: "EVE" },
+    { name: "Fulham", abbr: "FUL" },
+    { name: "Leeds United", abbr: "LEE" },
+    { name: "Leicester City", abbr: "LEI" },
+    { name: "Liverpool", abbr: "LIV" },
+    { name: "Manchester City", abbr: "MCI" },
+    { name: "Manchester United", abbr: "MUN" },
+    { name: "Newcastle United", abbr: "NEW" },
+    { name: "Nottingham Forest", abbr: "NFO" },
+    { name: "Southampton", abbr: "SOU" },
+    { name: "Tottenham Hotspur", abbr: "TOT" },
+    { name: "West Ham United", abbr: "WHU" },
+    { name: "Wolverhampton Wanderers", abbr: "WOL" },
+];
 
+const addPlClubs = async (prisma: PrismaClient) => {
     try {
         await prisma.club.createMany({
             data: plClubs.map((club) => {
-                return { name: club };
+                return { name: club.name, abbr: club.abbr };
             }),
         });
-    } catch (err: any) {}
+    } catch (err: any) {
+        console.log(err);
+    }
 
     const clubs = await prisma.club.findMany({
         where: {
-            name: { in: plClubs },
+            name: { in: plClubs.map((c) => c.name) },
         },
     });
 
@@ -64,25 +64,24 @@ const addPlFixtures = async (
     clubs: Club[],
     competitionId: string
 ) => {
-    const clubDict: { [name: string]: Club } = {};
-    clubs.forEach((club) => (clubDict[club.name] = club));
+    const clubDict = await createClubDict(prisma, false, clubs);
 
-    const fixtures = await prisma.fixture.createMany({
+    await prisma.fixture.createMany({
         data: plFixtures.map((fixture) => {
             const home = clubDict[fixture.home];
             const away = clubDict[fixture.away];
-            console.log(fixture.home, home);
-            console.log(fixture.away, away);
 
             return {
                 homeId: home!.id,
                 awayId: away!.id,
                 competitionId,
-                date: new Date(fixture.date).toJSON(),
+                date:
+                    fixture.date === "TBD"
+                        ? undefined
+                        : new Date(fixture.date).toJSON(),
             };
         }),
     });
-    console.log(fixtures);
 };
 
 export const seedClubs = async (prisma: PrismaClient) => {
@@ -92,4 +91,26 @@ export const seedClubs = async (prisma: PrismaClient) => {
 
 export const seed = async (prisma: PrismaClient) => {
     const pl = await createPremierLeague(prisma);
+};
+
+export const createClubDict = async (
+    prisma: PrismaClient,
+    isAbbr: boolean,
+    clubs?: Club[]
+) => {
+    if (!clubs) {
+        clubs = await prisma.club.findMany({
+            where: {
+                competitions: {
+                    some: {
+                        name: "Premier League",
+                    },
+                },
+            },
+        });
+    }
+
+    const clubDict: { [name: string]: Club } = {};
+    clubs.forEach((club) => (clubDict[isAbbr ? club.abbr : club.name] = club));
+    return clubDict;
 };

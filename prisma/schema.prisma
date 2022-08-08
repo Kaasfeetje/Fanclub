@@ -68,20 +68,23 @@ model VerificationToken {
 }
 
 model Fixture{
-    id          String @id @default(cuid())
-    home        Club @relation(name:"home",fields:[homeId],references:[id])
-    homeId      String
-    away        Club @relation(name:"away",fields:[awayId],references:[id])
-    awayId      String
-    date        DateTime
-    competition Competition @relation(fields:[competitionId],references:[id])
+    id            String @id @default(cuid())
+    home          Club @relation(name:"home",fields:[homeId],references:[id])
+    homeId        String
+    away          Club @relation(name:"away",fields:[awayId],references:[id])
+    awayId        String
+    date          DateTime?
+    competition   Competition @relation(fields:[competitionId],references:[id])
     competitionId String
-    score       String? //score model
+    score         Score?
+
+    @@unique([homeId,awayId,competitionId])
 }
 
 model Club{
     id String @id @default(cuid())
     name String @unique
+    abbr String @unique
     logo String?
     stadium String? //Stadium model
     website String?
@@ -105,3 +108,11 @@ model Competition{
     fixtures Fixture[]
 }
 
+model Score{
+    id String @id @default(cuid())
+    fixture Fixture @relation(fields:[fixtureId],references: [id])
+    fixtureId String @unique
+    home Int
+    away Int
+    //maybe add competition
+}
